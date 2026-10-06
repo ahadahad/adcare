@@ -1,0 +1,6 @@
+{
+  "name": "ShebaFlow Photo Studio",
+  "description": "Professional standalone online photo editing studio with AI background removal, auto-enhancement, face, skin, and hair detection, local HTML5 canvas processing, passport photo mode, presets, and filters.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

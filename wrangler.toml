@@ -1,0 +1,9 @@
+name = "ahad-digital-care-preview"
+main = "./src/worker.js"
+compatibility_date = "2026-06-24"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/ort-wasm-simd-threaded.jsep.wasm", "/assets/ort-wasm-simd-threaded.jsep-*.wasm"]

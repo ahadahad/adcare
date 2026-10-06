@@ -1,0 +1,6 @@
+{
+  "name": "DocScan Print - NID & ID Card Layout Tool",
+  "description": "Professional browser-based document scan preparation, auto-crop, enhancement, and A4 print layout tool for ID cards and scans.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

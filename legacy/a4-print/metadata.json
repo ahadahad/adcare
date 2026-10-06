@@ -1,0 +1,6 @@
+{
+  "name": "A4 Print Ready Studio - Document & NID Print Tool",
+  "description": "Professional print-ready document and ID card layout tool with auto-crop, photocopy whitening, 2-in-1 NID card formatting, and instant 300 DPI A4 printing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

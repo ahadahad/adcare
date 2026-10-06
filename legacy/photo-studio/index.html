@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ShebaFlow Photo Studio - Professional Photo Editing Made Simple</title>
+    <meta name="description" content="Professional standalone online photo editing studio with AI background removal, auto-enhancement, face, skin, and hair detection, local HTML5 canvas processing, passport photo mode, presets, and filters." />
+    <meta property="og:title" content="ShebaFlow Photo Studio - Professional Photo Editing Made Simple" />
+    <meta property="og:description" content="Professional standalone online photo editing studio with AI background removal, auto-enhancement, face, skin, and hair detection, local HTML5 canvas processing, passport photo mode, presets, and filters." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      (function() {
+        if (typeof console !== 'undefined' && console.error) {
+          var origErr = console.error.bind(console);
+          console.error = function() {
+            var msg = '';
+            for (var i = 0; i < arguments.length; i++) {
+              var arg = arguments[i];
+              if (typeof arg === 'string') {
+                msg += ' ' + arg;
+              } else if (arg && arg.message) {
+                msg += ' ' + arg.message;
+              }
+            }
+            if (
+              msg.indexOf('Created TensorFlow Lite XNNPACK delegate') !== -1 ||
+              msg.indexOf('INFO: Created TensorFlow Lite') !== -1 ||
+              msg.trim().indexOf('INFO:') === 0
+            ) {
+              if (console.info) {
+                console.info.apply(console, arguments);
+              }
+              return;
+            }
+            origErr.apply(console, arguments);
+          };
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
