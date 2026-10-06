@@ -41,12 +41,13 @@ The product shell runs at `http://localhost:3000`. The preserved A4 API server r
 
 ```bash
 npm run build
+npm run build:vercel
 npm run typecheck
 npm run test:a4-crop-learning
 npm run preview
 ```
 
-`npm run build` creates `dist/` for static hosting, then splits only ONNX Runtime's optional 28 MB WebGPU/JSEP kernel into two small static parts. The homepage references no model or OCR asset. The Cloudflare Worker streams those parts back at the runtime's original same-origin WASM URL. Tool code and models remain demand-loaded after entering the relevant tool and using a model-backed feature.
+`npm run build` creates `dist/` for the Cloudflare deployment and splits ONNX Runtime's optional 28 MB WebGPU/JSEP kernel into two static parts for the Cloudflare Worker. `npm run build:vercel` runs Vite directly and keeps the complete hashed WASM file intact so Vercel can serve it without the Cloudflare Worker. The homepage references no model or OCR asset; tool code and models remain demand-loaded after entering a tool and using a model-backed feature.
 
 ## Brand settings
 
@@ -79,7 +80,7 @@ npx --yes wrangler@4.102.0 deploy --temporary
 
 `wrangler.toml` pins `compatibility_date` to `2026-06-24`, the latest date accepted by the required Wrangler 4.102.0 bundled local runtime. It configures the SPA fallback and sends only the large ONNX kernel URL through a tiny Worker that streams two individually deployable static assets as one response. This stays within Cloudflare's current [Workers file-size limits](https://developers.cloudflare.com/workers/platform/limits/). The Worker does not process images or call providers. The temporary deployment carries no saved CLI login and has no server-side credentials.
 
-For a normal Vercel front-end deployment, import this directory, use `npm run build`, and publish `dist`; `vercel.json` rewrites direct product routes to the SPA entry. This configuration does not deploy the Cloudflare WASM streaming Worker or the preserved Express APIs. If the optional WebGPU/JSEP file is requested on that static host, its initialization can fail and the original enhancement engine falls back to its WASM provider. To activate the full server-backed AI endpoints in a regular production deployment, host the retained Node API services from `legacy/a4-print` and `legacy/photo-studio` with server-only environment variables and route `/api/detect-corners` and `/api/ai/*` to those services. Credential-backed provider features are intentionally inactive in the temporary preview; original local CV, crop, OCR, image-editing and export fallbacks remain in the applications.
+For a Vercel front-end deployment, import the repository root; `vercel.json` selects `npm run build:vercel`, publishes `dist`, and rewrites client-side routes to the SPA entry. `.vercelignore` excludes the preserved Windows archive and duplicate Photo Studio public bundle from Vercel uploads but does not delete them from GitHub. This is a static deployment: it does not run the Cloudflare Worker or the retained Express API servers. Vercel Functions limit request and response bodies to 4.5 MB, so the existing large-image API endpoints must stay on a compatible external Node host; route `/api/detect-corners` and `/api/ai/*` there if those optional provider features are needed. Browser-based CV, crop, OCR, image editing, and export fallbacks remain available without those APIs. See [deployment notes](docs/deployment.md) for details.
 
 ## Source preservation
 

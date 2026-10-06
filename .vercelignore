@@ -1,0 +1,5 @@
+# Preserved in GitHub for manual and Windows distribution; not needed by the app build.
+Ahad-Digital-Care-Windows-compatible.tar.gz
+
+# The Vite app serves the curated root public/ assets; this legacy upstream bundle duplicates them.
+legacy/photo-studio/public/
