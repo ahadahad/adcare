@@ -472,16 +472,18 @@ export const PhotoStudio: React.FC<PhotoStudioProps> = ({
 
     setIsRemovingBg(true);
 
-    const isRemoveBgKeyAvailable = Boolean(aiStatus?.removeBg?.isConfigured);
+    const isRemoveBgKeyAvailable = Boolean(
+      aiStatus?.removeBg?.isConfigured && aiStatus?.removeBg?.hasUsableCredits !== false
+    );
 
-    // Default to removebg if available or unless studio is explicitly requested
+    // Default to removebg if configured and has usable credits; otherwise use studio
     const targetProvider = provider || (isRemoveBgKeyAvailable ? 'removebg' : 'studio');
 
     addToast(
       'Extracting Subject...',
       targetProvider === 'removebg'
         ? 'Calling remove.bg API for high-precision alpha cutout...'
-        : 'Segmenting subject from background with alpha matting...',
+        : 'Segmenting subject from background with Studio Fast Vision...',
       'info'
     );
 
@@ -513,14 +515,34 @@ export const PhotoStudio: React.FC<PhotoStudioProps> = ({
               addToast('Subject Isolated', 'Clean transparent cutout generated via remove.bg.', 'success');
             }
           } else {
-            const errorJson = await res.json().catch(() => null);
-            console.warn('remove.bg API call failed, falling back to local vision matting:', errorJson);
-            const errDetail = errorJson?.error || 'remove.bg quota reached or service unavailable';
-            addToast('Engine Notice', `${errDetail} — isolated using Studio Fast Vision.`, 'info');
+            setAiStatus((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    removeBg: {
+                      isConfigured: prev.removeBg?.isConfigured ?? false,
+                      ...prev.removeBg,
+                      hasUsableCredits: false,
+                    },
+                  }
+                : prev
+            );
+            addToast('Studio Fast Vision Active', 'Subject isolated using Studio Fast Vision.', 'info');
           }
-        } catch (apiErr: any) {
-          console.warn('remove.bg network error, falling back:', apiErr);
-          addToast('Engine Notice', 'remove.bg unreachable — isolated using Studio Fast Vision.', 'info');
+        } catch {
+          setAiStatus((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  removeBg: {
+                    isConfigured: prev.removeBg?.isConfigured ?? false,
+                    ...prev.removeBg,
+                    hasUsableCredits: false,
+                  },
+                }
+              : prev
+          );
+          addToast('Studio Fast Vision Active', 'Subject isolated using Studio Fast Vision.', 'info');
         }
       }
 

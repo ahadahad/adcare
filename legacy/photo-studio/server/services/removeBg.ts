@@ -53,6 +53,16 @@ export interface RemoveBgResult {
   height?: number;
 }
 
+let isRemoveBgQuotaExhausted = false;
+
+export function isQuotaExhausted(): boolean {
+  return isRemoveBgQuotaExhausted;
+}
+
+export function setQuotaExhausted(exhausted: boolean): void {
+  isRemoveBgQuotaExhausted = exhausted;
+}
+
 function parseRemoveBgError(status: number, errJson: any, fallbackText?: string): string {
   let details = '';
   if (Array.isArray(errJson?.errors) && errJson.errors.length > 0) {
@@ -69,6 +79,7 @@ function parseRemoveBgError(status: number, errJson: any, fallbackText?: string)
   }
 
   if (status === 402) {
+    isRemoveBgQuotaExhausted = true;
     return 'remove.bg account has 0 credits remaining (quota exhausted). Please top up your account at remove.bg or use Studio Fast Vision.';
   }
 
@@ -155,7 +166,11 @@ export async function removeBackgroundWithRemoveBg(
     }
 
     const errorMessage = parseRemoveBgError(response.status, errJson, text);
-    console.error(`[remove.bg] Error [HTTP ${response.status}]: ${errorMessage}`);
+    if (response.status === 402 || response.status === 429) {
+      console.warn(`[remove.bg] Quota Notice [HTTP ${response.status}]: ${errorMessage}`);
+    } else {
+      console.error(`[remove.bg] Error [HTTP ${response.status}]: ${errorMessage}`);
+    }
     throw new Error(errorMessage);
   }
 
@@ -242,6 +257,9 @@ export async function testRemoveBgConnection(): Promise<{
     const totalCredits = credits?.total ?? 0;
     const freeCalls = apiCalls?.free_calls ?? 0;
     const hasUsableCredits = totalCredits > 0 || freeCalls > 0;
+    if (!hasUsableCredits) {
+      isRemoveBgQuotaExhausted = true;
+    }
 
     return {
       success: true,

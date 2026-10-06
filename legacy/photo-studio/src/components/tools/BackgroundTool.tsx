@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Check,
   Pipette,
@@ -32,12 +32,20 @@ export const BackgroundTool: React.FC<BackgroundToolProps> = ({
   isRemovingBg = false,
   aiStatus,
 }) => {
-  const [cutoutProvider, setCutoutProvider] = useState<'removebg' | 'studio'>('removebg');
-
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [showCustomColorBox, setShowCustomColorBox] = useState(false);
 
   const isRemoveBgConfigured = Boolean(aiStatus?.removeBg?.isConfigured);
+  const isRemoveBgUsable = Boolean(
+    aiStatus?.removeBg?.isConfigured && aiStatus?.removeBg?.hasUsableCredits !== false
+  );
+  const [cutoutProvider, setCutoutProvider] = useState<'removebg' | 'studio'>('studio');
+
+  useEffect(() => {
+    if (aiStatus?.removeBg?.hasUsableCredits === false && cutoutProvider === 'removebg') {
+      setCutoutProvider('studio');
+    }
+  }, [aiStatus, cutoutProvider]);
 
   const filteredPresets =
     activeCategory === 'all'

@@ -1,5 +1,43 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "app": {
+      "root": ".",
+      "framework": "vite",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "a-four-print",
+          "format": "url",
+          "env": "A4_PRINT_URL"
+        },
+        {
+          "type": "service",
+          "service": "photo-studio",
+          "format": "url",
+          "env": "PHOTO_STUDIO_URL"
+        }
+      ]
+    },
+    "a-four-print": {
+      "root": "legacy/a4-print",
+      "framework": "vite"
+    },
+    "nid-print": {
+      "root": "legacy/nid-print",
+      "framework": "vite"
+    },
+    "photo-studio": {
+      "root": "legacy/photo-studio",
+      "framework": "vite"
+    }
+  },
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "app"
+      }
+    }
   ]
 }

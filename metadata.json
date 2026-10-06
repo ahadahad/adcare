@@ -1,0 +1,6 @@
+{
+  "name": "Ahad Digital Care — Professional Photo & Document Tools",
+  "description": "Professional photo and document tools for clean, print-ready results: A4 Print Ready Studio, NID Print, and Photo Studio.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
