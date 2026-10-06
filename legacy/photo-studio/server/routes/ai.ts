@@ -13,8 +13,6 @@ import {
   removeBackgroundWithRemoveBg,
   getEffectiveRemoveBgKey,
   testRemoveBgConnection,
-  isQuotaExhausted,
-  setQuotaExhausted,
 } from '../services/removeBg.js';
 import {
   getRealEsrganConfig,
@@ -151,10 +149,9 @@ aiRouter.post('/remove-bg', async (req: Request, res: Response) => {
     }
 
     const effectiveRemoveBgKey = getEffectiveRemoveBgKey();
-    const quotaExhausted = isQuotaExhausted();
 
-    // If remove.bg key is configured on server, has credits, and not quota-exhausted
-    if (effectiveRemoveBgKey && !quotaExhausted && provider !== 'studio') {
+    // If remove.bg key is configured on server or provider is removebg
+    if (effectiveRemoveBgKey || provider === 'removebg') {
       try {
         const removeBgResult = await removeBackgroundWithRemoveBg(
           image,
@@ -169,13 +166,13 @@ aiRouter.post('/remove-bg', async (req: Request, res: Response) => {
           summary: 'Subject cleanly isolated using remove.bg API.',
         });
       } catch (removeBgError: any) {
-        setQuotaExhausted(true);
-        if (req.body.strict) {
+        if (provider === 'removebg' || req.body.strict) {
           return res.status(400).json({
             error: removeBgError.message || 'remove.bg API call failed',
             provider: 'remove.bg API',
           });
         }
+        console.warn('remove.bg API failed, falling back to Studio Vision:', removeBgError.message);
       }
     }
 

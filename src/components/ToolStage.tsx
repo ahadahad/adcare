@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type ComponentType } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useRef, useState } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import type { ComponentType } from 'react';
 import { useLanguage } from '../i18n';
 
 type EmbeddedTool = { default: ComponentType; styles: string };
@@ -15,83 +16,50 @@ const shellOverrides = `
 
 export function ToolStage({ load, label }: { load: ToolLoader; label: string }) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const mountRef = useRef<HTMLDivElement | null>(null);
+  const reactRootRef = useRef<Root | null>(null);
   const labelRef = useRef(label);
   labelRef.current = label;
   const { copy } = useLanguage();
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [retry, setRetry] = useState(0);
-  const [ToolComponent, setToolComponent] = useState<ComponentType | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setStatus('loading');
-    setToolComponent(null);
-
     let shadow = hostRef.current?.shadowRoot;
-    if (!shadow && hostRef.current) {
-      shadow = hostRef.current.attachShadow({ mode: 'open' });
-    }
+    if (!shadow && hostRef.current) shadow = hostRef.current.attachShadow({ mode: 'open' });
     if (!shadow) return;
+    shadow.replaceChildren();
+    reactRootRef.current = null;
 
-    load()
-      .then((module) => {
-        if (cancelled || !shadow) return;
-        const style = document.createElement('style');
-        style.textContent = `${module.styles}\n${shellOverrides}`;
-        const mount = document.createElement('div');
-        mount.id = 'tool-mount';
-        shadow.replaceChildren(style, mount);
-        mountRef.current = mount;
-        setToolComponent(() => module.default);
-        setStatus('ready');
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return;
-        console.error(`Unable to load ${labelRef.current}:`, error);
-        setStatus('error');
-      });
+    load().then((module) => {
+      if (cancelled || !shadow) return;
+      const style = document.createElement('style');
+      style.textContent = `${module.styles}\n${shellOverrides}`;
+      const mount = document.createElement('div');
+      mount.id = 'tool-mount';
+      shadow.replaceChildren(style, mount);
+      const root = createRoot(mount);
+      reactRootRef.current = root;
+      root.render(<module.default />);
+      setStatus('ready');
+    }).catch((error: unknown) => {
+      if (cancelled) return;
+      console.error(`Unable to load ${labelRef.current}:`, error);
+      setStatus('error');
+    });
 
     return () => {
       cancelled = true;
-      mountRef.current = null;
-      setToolComponent(null);
+      reactRootRef.current?.unmount();
+      reactRootRef.current = null;
     };
   }, [load, retry]);
 
-  return (
-    <div className="tool-stage-frame">
-      <div className="tool-stage" ref={hostRef} aria-label={label} />
-      {status === 'ready' && ToolComponent && mountRef.current && (
-        createPortal(<ToolComponent />, mountRef.current)
-      )}
-      {status !== 'ready' && (
-        <div
-          className={`tool-stage-message ${status === 'error' ? 'tool-load-error' : ''}`}
-          role={status === 'error' ? 'alert' : 'status'}
-        >
-          <div>
-            {status === 'loading' ? (
-              <>
-                <div className="stage-spinner" />
-                <strong>{copy.stage.loading} {label}…</strong>
-                <p>{copy.stage.prepare}</p>
-              </>
-            ) : (
-              <>
-                <strong>{copy.stage.failed}</strong>
-                <p>{copy.stage.other}</p>
-                <button
-                  className="button button-secondary"
-                  onClick={() => setRetry((value) => value + 1)}
-                >
-                  {copy.stage.retry}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  return <div className="tool-stage-frame">
+    <div className="tool-stage" ref={hostRef} aria-label={label} />
+    {status !== 'ready' && <div className={`tool-stage-message ${status === 'error' ? 'tool-load-error' : ''}`} role={status === 'error' ? 'alert' : 'status'}>
+      <div>{status === 'loading' ? <><div className="stage-spinner" /><strong>{copy.stage.loading} {label}…</strong><p>{copy.stage.prepare}</p></> : <><strong>{copy.stage.failed}</strong><p>{copy.stage.other}</p><button className="button button-secondary" onClick={() => setRetry((value) => value + 1)}>{copy.stage.retry}</button></>}</div>
+    </div>}
+  </div>;
 }

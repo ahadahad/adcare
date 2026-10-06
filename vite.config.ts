@@ -1,8 +1,8 @@
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, type Plugin } from 'vite';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
@@ -14,17 +14,10 @@ function originalAppAliases(): Plugin {
     { marker: `${path.sep}legacy${path.sep}photo-studio${path.sep}`, base: path.join(root, 'legacy/photo-studio') },
     { marker: `${path.sep}legacy${path.sep}nid-print${path.sep}`, base: path.join(root, 'legacy/nid-print') },
   ];
-
   return {
     name: 'original-app-local-aliases',
     enforce: 'pre',
     resolveId(source, importer) {
-      if (source === 'react' || source.startsWith('react/')) {
-        return path.resolve(root, 'node_modules', source);
-      }
-      if (source === 'react-dom' || source.startsWith('react-dom/')) {
-        return path.resolve(root, 'node_modules', source);
-      }
       if (!source.startsWith('@/') || !importer) return null;
       const app = roots.find(({ marker }) => importer.includes(marker));
       return app ? path.resolve(app.base, source.slice(2)) : null;
@@ -32,22 +25,10 @@ function originalAppAliases(): Plugin {
   };
 }
 
-function serveJsepWasmAndApi(): Plugin {
+function serveJsepWasmInDevelopment(): Plugin {
   return {
-    name: 'serve-wasm-and-api',
-    async configureServer(server) {
-      try {
-        const expressModule = (await import('express')).default;
-        const { apiRouter } = await import('./server/api.ts');
-        const apiApp = expressModule();
-        apiApp.use(apiRouter);
-        server.middlewares.use('/api', (req, res, next) => {
-          apiApp(req as any, res as any, next);
-        });
-      } catch (err) {
-        console.warn('Could not mount /api in Vite dev server:', err);
-      }
-
+    name: 'serve-ort-jsep-wasm-in-development',
+    configureServer(server) {
       server.middlewares.use('/ort-wasm-simd-threaded.jsep.wasm', (request, response, next) => {
         if ((request.method !== 'GET' && request.method !== 'HEAD') || !existsSync(jsepWasm)) {
           next();
@@ -66,28 +47,35 @@ function serveJsepWasmAndApi(): Plugin {
   };
 }
 
-export default defineConfig(() => {
-  return {
-    plugins: [originalAppAliases(), react(), tailwindcss(), serveJsepWasmAndApi()],
-    resolve: {
-      alias: [
-        { find: /^@\//, replacement: `${path.resolve(root, 'src')}/` },
-        { find: /^react$/, replacement: path.resolve(root, 'node_modules/react') },
-        { find: /^react\/(.*)$/, replacement: `${path.resolve(root, 'node_modules/react')}/$1` },
-        { find: /^react-dom$/, replacement: path.resolve(root, 'node_modules/react-dom') },
-        { find: /^react-dom\/(.*)$/, replacement: `${path.resolve(root, 'node_modules/react-dom')}/$1` },
-      ],
-      dedupe: ['react', 'react-dom'],
+export default defineConfig({
+  plugins: [originalAppAliases(), react(), tailwindcss(), serveJsepWasmInDevelopment()],
+  publicDir: 'public',
+  build: {
+    target: 'es2022',
+    sourcemap: false,
+    manifest: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('/node_modules/react/') || id.includes('/node_modules/react-dom/')) return 'react-vendor';
+          if (id.includes('/node_modules/react-router')) return 'router-vendor';
+        },
+      },
     },
-    optimizeDeps: {
-      include: ['react', 'react-dom', 'react-dom/client'],
+  },
+  server: {
+    host: '0.0.0.0',
+    port: 3000,
+    allowedHosts: ['.us2.manus.computer'],
+    proxy: {
+      '/api/detect-corners': { target: 'http://127.0.0.1:3001', changeOrigin: true },
+      '/api/ai': { target: 'http://127.0.0.1:3002', changeOrigin: true },
+      '/api/detect-nid': {
+        target: 'https://docu.itlancerbd.com',
+        changeOrigin: true,
+        rewrite: (requestPath) => requestPath.replace(/^\/api\/detect-nid/, '/detect-nid'),
+        secure: false,
+      },
     },
-    publicDir: 'public',
-    server: {
-      host: '0.0.0.0',
-      port: 3000,
-      hmr: process.env.DISABLE_HMR !== 'true',
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
-    },
-  };
+  },
 });

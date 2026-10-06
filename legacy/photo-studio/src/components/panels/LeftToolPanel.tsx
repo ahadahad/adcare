@@ -178,7 +178,7 @@ export const LeftToolPanel: React.FC<LeftToolPanelProps> = ({
           {/* Remove BG Button */}
           <button
             id="btn-tool-remove-bg"
-            onClick={() => onRemoveBackground()}
+            onClick={() => onRemoveBackground('removebg')}
             disabled={isRemovingBg || !activeImage}
             className={`flex flex-col items-center justify-center gap-1.5 py-2.5 px-1.5 rounded-xl text-xs font-semibold tracking-wide transition-all border ${
               isRemovingBg
